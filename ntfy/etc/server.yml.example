@@ -1,0 +1,15 @@
+# 复制为 server.yml 后生效（ntfy-init 会自动复制）
+# 公网域名务必改成你的；开启鉴权后未授权不可读写任何 topic
+
+base-url: "https://ntfy.kiteyuan.info"
+listen-http: ":80"
+behind-proxy: true
+
+auth-file: "/var/lib/ntfy/user.db"
+auth-default-access: "deny-all"
+enable-login: true
+
+attachment-cache-dir: "/var/cache/ntfy/attachments"
+attachment-total-size-limit: "5G"
+attachment-file-size-limit: "15M"
+attachment-expiry-duration: "24h"

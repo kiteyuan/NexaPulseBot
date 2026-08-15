@@ -1,0 +1,5 @@
+# 本地从源码构建 bot（覆盖 compose 里的预构建镜像）
+services:
+  bot:
+    build: .
+    image: ${NEXA_IMAGE:-ghcr.io/kiteyuan/nexapulsebot:latest}

@@ -1,0 +1,52 @@
+# 部署：docker compose up -d（拉预构建镜像，服务器无需 build）
+# 本地改代码：docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+
+services:
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    command: ["serve"]
+    ports:
+      - "127.0.0.1:2586:80"
+    volumes:
+      - ./ntfy/cache:/var/cache/ntfy
+      - ./ntfy/etc:/etc/ntfy
+      - ./ntfy/data:/var/lib/ntfy
+
+  ntfy-init:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy-init
+    restart: "no"
+    depends_on:
+      - ntfy
+    volumes:
+      - ./ntfy/cache:/var/cache/ntfy
+      - ./ntfy/etc:/etc/ntfy
+      - ./ntfy/data:/var/lib/ntfy
+      - ./ntfy:/ntfy-host
+      - ./config:/config
+      - ./deploy/ntfy-init.sh:/ntfy-init.sh:ro
+    entrypoint: ["/bin/sh", "/ntfy-init.sh"]
+
+  bot:
+    image: ${NEXA_IMAGE:-ghcr.io/kiteyuan/nexapulsebot:latest}
+    container_name: nexapulsebot
+    restart: unless-stopped
+    depends_on:
+      ntfy:
+        condition: service_started
+      ntfy-init:
+        condition: service_completed_successfully
+    env_file:
+      - path: ./ntfy/bot.env
+        required: false
+    environment:
+      - PYTHONUNBUFFERED=1
+      - NEXA_NTFY_BASE_URL=http://ntfy:80
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./sessions:/app/sessions
+    entrypoint: ["/bin/sh", "/app/bot-entrypoint.sh"]
+    command: ["python", "-m", "nexa.cli", "run"]
