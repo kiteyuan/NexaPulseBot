@@ -401,6 +401,18 @@ async def cmd_ntfy(args: Any) -> int:
         ok, msg = await client.test_send(topic=topic)
         print(("OK: " if ok else "FAIL: ") + msg)
         return 0 if ok else 1
+    if args.ntfy_cmd == "acl-list":
+        from nexa.ntfy.acl import list_access
+
+        ok, out = list_access()
+        print(out)
+        return 0 if ok else 1
+    if args.ntfy_cmd == "acl-set":
+        from nexa.ntfy.acl import set_guest_access
+
+        ok, out = set_guest_access(args.topic, args.guest)
+        print(out)
+        return 0 if ok else 1
     return 2
 
 

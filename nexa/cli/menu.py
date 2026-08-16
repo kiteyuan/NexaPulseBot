@@ -223,6 +223,7 @@ async def _menu_topics() -> None:
                 ("disable", "禁用主题"),
                 ("enable", "启用主题"),
                 ("delete", "删除主题"),
+                ("acl", "ntfy 主题鉴权"),
                 ("conn", "ntfy 连接测试"),
                 ("send", "ntfy 推送测试"),
                 ("ntfy", "ntfy 连接设置"),
@@ -244,6 +245,8 @@ async def _menu_topics() -> None:
             await _enable_topic()
         elif key == "delete":
             await _delete_topic()
+        elif key == "acl":
+            await _menu_topic_acl()
         elif key == "conn":
             await commands.cmd_ntfy(argparse.Namespace(ntfy_cmd="test"))
             ui.pause()
@@ -269,6 +272,67 @@ async def _menu_topics() -> None:
                 )
             )
             ui.pause()
+
+
+async def _menu_topic_acl() -> None:
+    """Control anonymous (*) ACL per topic via ntfy access."""
+    from nexa.ntfy import acl as ntfy_acl
+
+    crumb = "主菜单 › ntfy 主题 › 鉴权"
+    while True:
+        key = ui.pick(
+            "ntfy 主题鉴权",
+            [
+                ("list", "查看当前 ACL"),
+                ("set", "设置主题游客权限"),
+            ],
+            crumb=crumb,
+        )
+        if not key:
+            return
+        if key == "list":
+            ok, out = ntfy_acl.list_access()
+            print()
+            print(out if out else "（无输出）")
+            if not ok:
+                print("  · 失败：见上方说明")
+            ui.pause()
+        elif key == "set":
+            await _set_topic_guest_acl()
+
+
+async def _set_topic_guest_acl() -> None:
+    from nexa.ntfy import acl as ntfy_acl
+
+    topic = await _pick_topic_name(allow_empty=False)
+    if not topic:
+        return
+
+    ok, acl_text = ntfy_acl.list_access()
+    current = ntfy_acl.parse_guest_mode_from_acl(acl_text, topic) if ok else None
+    if current:
+        print(f"  · 主题「{topic}」游客当前: {ntfy_acl.guest_mode_label(current)}")
+    elif ok:
+        print(f"  · 主题「{topic}」游客当前: 跟随服务器默认（多为 deny-all）")
+
+    print("\n  说明: 只改匿名用户(*)；Bot 仍用 Token 发帖，不受游客权限影响。")
+    print("  服务器默认一般为 deny-all，未单独放行的主题游客不可访问。\n")
+
+    modes = list(ntfy_acl.GUEST_MODES.items())
+    options = [(code, f"{label} — {desc}") for code, (label, desc) in modes]
+    mode = ui.pick("游客权限", options, crumb=f"主题 {topic}")
+    if not mode:
+        return
+
+    ok, out = ntfy_acl.set_guest_access(topic, mode)
+    print()
+    if out:
+        print(out)
+    if ok:
+        print(f"  · 已设置「{topic}」→ {ntfy_acl.guest_mode_label(mode)}")
+    else:
+        print("  · 设置失败")
+    ui.pause()
 
 
 async def _sync_topic_catalog() -> list[str]:

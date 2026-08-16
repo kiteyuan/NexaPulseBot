@@ -44,9 +44,13 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - NEXA_NTFY_BASE_URL=http://ntfy:80
+      - NTFY_AUTH_FILE=/var/lib/ntfy/user.db
     volumes:
       - ./config:/app/config
       - ./data:/app/data
       - ./sessions:/app/sessions
+      # Shared with ntfy service so CLI menu can manage topic ACL
+      - ./ntfy/data:/var/lib/ntfy
+      - ./ntfy/etc:/etc/ntfy:ro
     entrypoint: ["/bin/sh", "/app/bot-entrypoint.sh"]
     command: ["python", "-m", "nexa.cli", "run"]

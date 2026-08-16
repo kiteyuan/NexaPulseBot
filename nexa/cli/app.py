@@ -69,6 +69,15 @@ def build_parser() -> argparse.ArgumentParser:
     ntfy_sub.add_parser("test", help="测试 ntfy 可达性")
     ntfy_send = ntfy_sub.add_parser("send-test", help="向指定 topic 发一条测试推送")
     ntfy_send.add_argument("--topic", required=True, help="ntfy 主题名")
+    ntfy_sub.add_parser("acl-list", help="列出 ntfy 主题 ACL")
+    ntfy_acl = ntfy_sub.add_parser("acl-set", help="设置主题游客 ACL")
+    ntfy_acl.add_argument("--topic", required=True)
+    ntfy_acl.add_argument(
+        "--guest",
+        required=True,
+        choices=["read-only", "deny", "read-write"],
+        help="匿名用户权限",
+    )
 
     llm = sub.add_parser("llm", help="LLM")
     llm_sub = llm.add_subparsers(dest="llm_cmd", required=True)
