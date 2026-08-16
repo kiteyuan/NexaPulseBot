@@ -116,6 +116,7 @@ async def _menu_account() -> None:
                 continue
             pwd = ui.ask("2FA 密码（无则回车）", "")
             print("  · 若 bot 在跑请先: docker compose stop bot")
+            print("  · 然后: docker compose run --rm --no-deps bot python -m nexa.cli")
             await commands.cmd_account(
                 argparse.Namespace(
                     account_cmd="login",
@@ -174,6 +175,7 @@ async def _menu_channel() -> None:
             ui.pause()
         elif key == "sync":
             print("  · 若 bot 在跑请先: docker compose stop bot")
+            print("  · 然后: docker compose run --rm --no-deps bot python -m nexa.cli")
             await commands.cmd_channel(
                 argparse.Namespace(channel_cmd="sync", account=account_id)
             )

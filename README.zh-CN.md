@@ -44,7 +44,10 @@ docker compose up -d
 
 ```bash
 # 交互菜单（账号 / 主题 / LLM）
+# bot 在跑时：
 docker compose exec bot python -m nexa.cli
+# 已 stop bot（登录/同步要独占 session）时：
+docker compose run --rm --no-deps bot python -m nexa.cli
 
 # 更新 bot 镜像
 docker compose pull bot && docker compose up -d bot

@@ -552,8 +552,10 @@ def _friendly_lock_error(exc: BaseException) -> BaseException:
     if "database is locked" in text or "database locked" in text:
         return RuntimeError(
             "数据库被占用（多半是 bot 正在跑，与菜单抢同一份 Telethon session / SQLite）。\n"
-            "  请先: docker compose stop bot\n"
-            "  再在菜单里同步/登录，完成后: docker compose start bot"
+            "  1) docker compose stop bot\n"
+            "  2) docker compose run --rm --no-deps bot python -m nexa.cli\n"
+            "     （bot 已停止时不能用 exec，要用 run 开临时菜单）\n"
+            "  3) 同步/登录完成后: docker compose start bot"
         )
     return exc if isinstance(exc, Exception) else RuntimeError(str(exc))
 

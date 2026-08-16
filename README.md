@@ -44,7 +44,10 @@ What happens on first boot:
 
 ```bash
 # Interactive menu (Telegram / topics / LLM)
+# While bot is running:
 docker compose exec bot python -m nexa.cli
+# After `docker compose stop bot` (login/sync needs exclusive session):
+docker compose run --rm --no-deps bot python -m nexa.cli
 
 # Update bot image
 docker compose pull bot && docker compose up -d bot
