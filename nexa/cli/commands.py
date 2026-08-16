@@ -94,9 +94,14 @@ async def cmd_status(_args: Any) -> int:
     topics = ", ".join(settings.ntfy.topics) if settings.ntfy.topics else "（无）"
     print(f"  ntfy  {settings.ntfy.base_url}  prio={settings.ntfy.priority}")
     print(f"  主题  {topics}")
+    from nexa.config import TRANSLATE_OPTIONS
+
+    tr = (settings.llm.translate_to or "off").strip().lower()
+    tr_label = TRANSLATE_OPTIONS.get(tr, tr)
     print(
         f"  LLM   enabled={settings.llm.enabled}  "
-        f"{settings.llm.provider}/{settings.llm.model}"
+        f"{settings.llm.provider}/{settings.llm.model}  "
+        f"translate={tr_label}"
     )
     print("── 账号")
     if not accounts:
@@ -194,6 +199,15 @@ async def cmd_config(args: Any) -> int:
         if args.llm_temperature is not None:
             settings.llm.temperature = float(args.llm_temperature)
             changed.append("llm.temperature")
+        if getattr(args, "llm_translate", None) is not None:
+            code = str(args.llm_translate).strip().lower()
+            from nexa.config import TRANSLATE_OPTIONS
+
+            if code not in TRANSLATE_OPTIONS:
+                print(f"无效翻译目标: {code}（可选: {', '.join(TRANSLATE_OPTIONS)}）")
+                return 2
+            settings.llm.translate_to = code
+            changed.append("llm.translate_to")
         if args.min_length is not None:
             settings.filter.min_length = int(args.min_length)
             changed.append("filter.min_length")

@@ -8,7 +8,8 @@
     "base_url": "https://api.deepseek.com/v1",
     "api_key": "",
     "model": "deepseek-v4-flash",
-    "temperature": 0.3
+    "temperature": 0.3,
+    "translate_to": "off"
   },
   "ntfy": {
     "base_url": "http://127.0.0.1:2586",

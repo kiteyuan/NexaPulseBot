@@ -32,6 +32,11 @@ def build_parser() -> argparse.ArgumentParser:
     cfg_set.add_argument("--llm-key")
     cfg_set.add_argument("--llm-model")
     cfg_set.add_argument("--llm-temperature", type=float)
+    cfg_set.add_argument(
+        "--llm-translate",
+        choices=["off", "zh", "en", "ja", "ko"],
+        help="LLM 翻译目标：off/zh/en/ja/ko",
+    )
     cfg_set.add_argument("--min-length", type=int)
     cfg_sub.add_parser("edit", help="用 $EDITOR 打开 settings.json")
 

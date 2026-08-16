@@ -14,6 +14,16 @@ SETTINGS_PATH = CONFIG_DIR / "settings.json"
 EXAMPLE_PATH = CONFIG_DIR / "settings.example.json"
 
 
+# off = no translation; otherwise BCP-47-ish short codes used in prompts
+TRANSLATE_OPTIONS: dict[str, str] = {
+    "off": "关闭（不翻译）",
+    "zh": "中文",
+    "en": "English",
+    "ja": "日本語",
+    "ko": "한국어",
+}
+
+
 class LLMSettings(BaseModel):
     enabled: bool = False
     provider: str = "DeepSeek"
@@ -21,6 +31,8 @@ class LLMSettings(BaseModel):
     api_key: str = ""
     model: str = "deepseek-v4-flash"
     temperature: float = 0.3
+    # off | zh | en | ja | ko — translate cleaned body/title after review
+    translate_to: str = "off"
 
 
 class NtfySettings(BaseModel):
@@ -100,6 +112,9 @@ def _apply_env_overrides(settings: AppSettings) -> AppSettings:
         settings.llm.api_key = v
     if v := os.getenv("NEXA_LLM_MODEL", "").strip():
         settings.llm.model = v
+    if v := os.getenv("NEXA_LLM_TRANSLATE", "").strip().lower():
+        if v in TRANSLATE_OPTIONS:
+            settings.llm.translate_to = v
     if v := os.getenv("NEXA_TG_POLL_INTERVAL", "").strip():
         settings.telegram_poll_interval_seconds = float(v)
     return settings
@@ -119,6 +134,10 @@ def load_settings() -> AppSettings:
             topics.append(legacy)
         ntfy["topics"] = topics
         ntfy.setdefault("disabled_topics", [])
+    llm = data.get("llm")
+    if isinstance(llm, dict):
+        tr = str(llm.get("translate_to") or "off").strip().lower()
+        llm["translate_to"] = tr if tr in TRANSLATE_OPTIONS else "off"
     settings = AppSettings.model_validate(data)
     return _apply_env_overrides(settings)
 

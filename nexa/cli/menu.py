@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from nexa.cli import commands
 from nexa.cli import display as ui
-from nexa.config import load_settings, save_settings
+from nexa.config import TRANSLATE_OPTIONS, load_settings, save_settings
 from nexa.database.db import init_db, session_scope
 from nexa.database.models import Account, Channel, Message, SendStatus
 from nexa.llm.catalog import PROVIDERS
@@ -29,6 +29,7 @@ def _config_ns(**kwargs: object) -> argparse.Namespace:
         llm_key=None,
         llm_model=None,
         llm_temperature=None,
+        llm_translate=None,
         min_length=None,
     )
     base.update(kwargs)
@@ -43,7 +44,7 @@ async def run_menu() -> int:
                 ("account", "Telegram 账号"),
                 ("channel", "Telegram 频道"),
                 ("topic", "ntfy 主题管理"),
-                ("llm", "LLM 审核设置"),
+                ("llm", "LLM 设置"),
                 ("logs", "查看日志"),
             ],
             back="退出",
@@ -491,16 +492,20 @@ async def _delete_topic() -> None:
     ui.pause()
 
 
-# ── LLM 审核设置 ─────────────────────────────────────────────────
+# ── LLM 设置 ─────────────────────────────────────────────────────
 
 
 async def _menu_llm() -> None:
-    crumb = "主菜单 › LLM 审核"
+    crumb = "主菜单 › LLM 设置"
     while True:
+        s = load_settings()
+        tr = (s.llm.translate_to or "off").strip().lower()
+        tr_label = TRANSLATE_OPTIONS.get(tr, tr)
         key = ui.pick(
-            "LLM 审核设置",
+            "LLM 设置",
             [
                 ("config", "LLM 配置"),
+                ("translate", f"LLM 翻译（当前：{tr_label}）"),
                 ("filter", "过滤规则"),
                 ("test", "LLM 连接测试"),
             ],
@@ -510,11 +515,36 @@ async def _menu_llm() -> None:
             return
         if key == "config":
             await _llm_config()
+        elif key == "translate":
+            await _llm_translate()
         elif key == "filter":
             await _filter_config()
         elif key == "test":
             await commands.cmd_llm(argparse.Namespace(llm_cmd="test"))
             ui.pause()
+
+
+async def _llm_translate() -> None:
+    s = load_settings()
+    current = (s.llm.translate_to or "off").strip().lower()
+    options = list(TRANSLATE_OPTIONS.items())
+    print("\n  推送语言（审核通过后：清广告 + 译为目标语言；专有名词保留原文）:")
+    for i, (code, label) in enumerate(options, start=1):
+        mark = " ←" if code == current else ""
+        print(f"    {i}. {label} ({code}){mark}")
+    pick = ui.ask("编号", "")
+    if not pick.isdigit():
+        print("  · 已取消")
+        ui.pause()
+        return
+    idx = int(pick)
+    if not (1 <= idx <= len(options)):
+        print("  · 无效编号")
+        ui.pause()
+        return
+    code = options[idx - 1][0]
+    await commands.cmd_config(_config_ns(llm_translate=code))
+    ui.pause()
 
 
 async def _llm_config() -> None:

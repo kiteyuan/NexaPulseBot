@@ -8,7 +8,7 @@ import httpx
 from pydantic import BaseModel, Field, ValidationError
 
 from nexa.config import LLMSettings
-from nexa.llm.prompts import REVIEW_SYSTEM_PROMPT, build_review_user_prompt
+from nexa.llm.prompts import build_review_system_prompt, build_review_user_prompt
 
 
 class ReviewResult(BaseModel):
@@ -17,7 +17,7 @@ class ReviewResult(BaseModel):
     importance: int = Field(default=5, ge=1, le=10)
     reason: str = ""
     title: str = ""
-    # Cleaned push body (strip trailing promo); empty → sender falls back to original
+    # Cleaned (and optionally translated) push body; empty → sender falls back to original
     body: str = ""
     # Legacy alias; prefer body
     summary: str = ""
@@ -84,19 +84,27 @@ class LLMClient:
             return False, [], str(exc)
 
     async def review_message(self, content: str, *, media_count: int = 0) -> ReviewResult:
+        translate_to = getattr(self.settings, "translate_to", "off") or "off"
         payload = {
             "model": self.settings.model,
             "temperature": self.settings.temperature,
             "messages": [
-                {"role": "system", "content": REVIEW_SYSTEM_PROMPT},
+                {
+                    "role": "system",
+                    "content": build_review_system_prompt(translate_to),
+                },
                 {
                     "role": "user",
-                    "content": build_review_user_prompt(content, media_count=media_count),
+                    "content": build_review_user_prompt(
+                        content,
+                        media_count=media_count,
+                        translate_to=translate_to,
+                    ),
                 },
             ],
             "response_format": {"type": "json_object"},
         }
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=90.0) as client:
             resp = await client.post(
                 self._chat_url(),
                 headers=self._headers(),
